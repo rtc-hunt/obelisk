@@ -84,6 +84,7 @@ type ObeliskWidget js t route m =
   , Prerender js t m
   , PrebuildAgnostic t route m
   , PrebuildAgnostic t route (Client m)
+  , MountableDomBuilder t (Client m)
   , HasConfigs m
   , HasCookies m
   , MonadIO (Performable m)
