@@ -12,6 +12,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Obelisk.Frontend
   ( ObeliskWidget
   , Frontend (..)
@@ -205,6 +206,7 @@ runFrontendWithConfigsAndCurrentRoute mode configs validFullEncoder frontend = d
            , MonadSample DomTimeline (Performable m)
            , DOM.MonadJSM m
            , MonadFix (Client (HydrationDomBuilderT s DomTimeline m))
+           , MountableDomBuilder DomTimeline (Client (HydrationDomBuilderT s DomTimeline m))
            , MonadFix (Performable m)
            , MonadFix m
            , Prerender js DomTimeline (HydrationDomBuilderT s DomTimeline m)
@@ -233,6 +235,19 @@ runFrontendWithConfigsAndCurrentRoute mode configs validFullEncoder frontend = d
     else runImmediateWidgetWithHeadAndBody w
 
 type FrontendWidgetT r = RoutedT DomTimeline r (SetRouteT DomTimeline r (RouteToUrlT r (ConfigsT (CookiesT (HydratableT (PostBuildT DomTimeline (StaticDomBuilderT DomTimeline (PerformEventT DomTimeline DomHost))))))))
+
+instance MountableDomBuilder t m => MountableDomBuilder t (ReaderT r m) where
+  type DomFragment (ReaderT r m) = DomFragment m
+  buildDomFragment x = do
+    r <- ask
+    lift $ buildDomFragment $ runReaderT x r
+  mountDomFragment x y = lift $ mountDomFragment x y
+ 
+instance MountableDomBuilder t m => MountableDomBuilder t (HydratableT m) where
+  type DomFragment (HydratableT m) = DomFragment m
+  buildDomFragment = do
+    lift . buildDomFragment . runHydratableT
+  mountDomFragment x y = lift $ mountDomFragment x y
 
 renderFrontendHtml
   :: MonadIO m

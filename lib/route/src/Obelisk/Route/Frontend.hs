@@ -186,6 +186,13 @@ instance Adjustable t m => Adjustable t (RoutedT t r m) where
   traverseDMapWithKeyWithAdjust f a0 a' = RoutedT $ traverseDMapWithKeyWithAdjust (\k v -> coerce $ f k v) (coerce a0) $ coerce a'
   traverseDMapWithKeyWithAdjustWithMove f a0 a' = RoutedT $ traverseDMapWithKeyWithAdjustWithMove (\k v -> coerce $ f k v) (coerce a0) $ coerce a'
 
+instance MountableDomBuilder t m => MountableDomBuilder t (RoutedT t r m) where
+  type DomFragment (RoutedT t r m) = DomFragment m
+  buildDomFragment x = RoutedT $ do
+    r <- ask
+    lift $ buildDomFragment (runRoutedT x r)
+  mountDomFragment f s = lift $ mountDomFragment f s
+
 instance (Monad m, MonadQuery t vs m) => MonadQuery t vs (RoutedT t r m) where
   tellQueryIncremental = lift . tellQueryIncremental
   askQueryResult = lift askQueryResult
@@ -375,6 +382,15 @@ instance (MonadHold t m, Adjustable t m) => Adjustable t (SetRouteT t r m) where
   traverseDMapWithKeyWithAdjust f a0 a' = SetRouteT $ traverseDMapWithKeyWithAdjust (\k v -> coerce $ f k v) (coerce a0) $ coerce a'
   traverseDMapWithKeyWithAdjustWithMove f a0 a' = SetRouteT $ traverseDMapWithKeyWithAdjustWithMove (\k v -> coerce $ f k v) (coerce a0) $ coerce a'
 
+instance (MountableDomBuilder t m, MonadFix m, MonadHold t m) => MountableDomBuilder t (SetRouteT t r m) where
+  type DomFragment (SetRouteT t r m) = DomFragment m
+  buildDomFragment x = do
+    (frag, (a, r)) <- lift $ buildDomFragment (runSetRouteT x)
+    SetRouteT . tellEvent $ r
+    pure (frag, a)
+  mountDomFragment f s = lift $ mountDomFragment f s
+
+
 instance (Monad m, MonadQuery t vs m) => MonadQuery t vs (SetRouteT t r m) where
   tellQueryIncremental = lift . tellQueryIncremental
   askQueryResult = lift askQueryResult
@@ -460,6 +476,13 @@ instance Adjustable t m => Adjustable t (RouteToUrlT r m) where
   traverseIntMapWithKeyWithAdjust f a0 a' = RouteToUrlT $ traverseIntMapWithKeyWithAdjust (coerce f) (coerce a0) $ coerce a'
   traverseDMapWithKeyWithAdjust f a0 a' = RouteToUrlT $ traverseDMapWithKeyWithAdjust (\k v -> coerce $ f k v) (coerce a0) $ coerce a'
   traverseDMapWithKeyWithAdjustWithMove f a0 a' = RouteToUrlT $ traverseDMapWithKeyWithAdjustWithMove (\k v -> coerce $ f k v) (coerce a0) $ coerce a'
+
+instance (MountableDomBuilder t m, MonadFix m, MonadHold t m) => MountableDomBuilder t (RouteToUrlT r m) where
+  type DomFragment (RouteToUrlT r m) = DomFragment m
+  buildDomFragment x = do
+    r <- RouteToUrlT ask
+    lift $ buildDomFragment (runRouteToUrlT x r)
+  mountDomFragment f s = lift $ mountDomFragment f s
 
 instance (Monad m, MonadQuery t vs m) => MonadQuery t vs (RouteToUrlT r m) where
   tellQueryIncremental = lift . tellQueryIncremental

@@ -41,11 +41,15 @@ import qualified Data.Text.Encoding as T
 import Reflex
 import Reflex.Host.Class (MonadReflexCreateTrigger)
 import Reflex.Dom.Core
-  ( DomBuilder
+  ( buildDomFragment
+  , DomBuilder
+  , DomFragment
   , DomRenderHook
   , HasDocument
   , HasJS
   , HasJSContext
+  , MountableDomBuilder
+  , mountDomFragment
   , Prerender (Client)
   , StaticDomBuilderT
   , prerender
@@ -130,6 +134,12 @@ instance Prerender js t m => Prerender js t (ConfigsT m) where
   type Client (ConfigsT m) = ConfigsT (Client m)
   prerender server client = ConfigsT $ ReaderT $ \configs ->
     prerender (runConfigsT configs server) (runConfigsT configs client)
+
+instance MountableDomBuilder t m => MountableDomBuilder t (ConfigsT m) where
+  type DomFragment (ConfigsT m) = (DomFragment m)
+  buildDomFragment x = ConfigsT $ ReaderT $ \configs ->
+    buildDomFragment (runConfigsT configs x)
+  mountDomFragment f x = lift $ mountDomFragment f x
 
 instance PrimMonad m => PrimMonad (ConfigsT m) where
   type PrimState (ConfigsT m) = PrimState m
