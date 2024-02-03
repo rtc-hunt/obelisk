@@ -85,7 +85,7 @@ type ObeliskWidget js t route m =
   , Prerender js t m
   , PrebuildAgnostic t route m
   , PrebuildAgnostic t route (Client m)
-  , MountableDomBuilder t (Client m)
+  , MountableDomBuilder t m
   , HasConfigs m
   , HasCookies m
   , MonadIO (Performable m)
@@ -206,7 +206,7 @@ runFrontendWithConfigsAndCurrentRoute mode configs validFullEncoder frontend = d
            , MonadSample DomTimeline (Performable m)
            , DOM.MonadJSM m
            , MonadFix (Client (HydrationDomBuilderT s DomTimeline m))
-           , MountableDomBuilder DomTimeline (Client (HydrationDomBuilderT s DomTimeline m))
+           , MountableDomBuilder DomTimeline (HydrationDomBuilderT s DomTimeline m)
            , MonadFix (Performable m)
            , MonadFix m
            , Prerender js DomTimeline (HydrationDomBuilderT s DomTimeline m)
@@ -236,7 +236,7 @@ runFrontendWithConfigsAndCurrentRoute mode configs validFullEncoder frontend = d
 
 type FrontendWidgetT r = RoutedT DomTimeline r (SetRouteT DomTimeline r (RouteToUrlT r (ConfigsT (CookiesT (HydratableT (PostBuildT DomTimeline (StaticDomBuilderT DomTimeline (PerformEventT DomTimeline DomHost))))))))
 
-instance MountableDomBuilder t m => MountableDomBuilder t (ReaderT r m) where
+{-instance MountableDomBuilder t m => MountableDomBuilder t (ReaderT r m) where
   type DomFragment (ReaderT r m) = DomFragment m
   buildDomFragment x = do
     r <- ask
@@ -248,6 +248,7 @@ instance MountableDomBuilder t m => MountableDomBuilder t (HydratableT m) where
   buildDomFragment = do
     lift . buildDomFragment . runHydratableT
   mountDomFragment x y = lift $ mountDomFragment x y
+-}
 
 renderFrontendHtml
   :: MonadIO m

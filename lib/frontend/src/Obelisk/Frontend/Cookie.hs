@@ -55,6 +55,7 @@ newtype CookiesT m a = CookiesT { unCookiesT :: ReaderT Cookies m a }
     ( Functor
     , Applicative
     , DomBuilder t
+    , MountableDomBuilder t
     , Monad
     , MonadFix
     , MonadHold t
